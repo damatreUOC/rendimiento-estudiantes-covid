@@ -2,6 +2,7 @@
 Archivo con todas las funciones auxiliares necesarias
 '''
 
+import pandas as pd
 
 def comprobaciones(dataset):
     '''
@@ -22,3 +23,34 @@ def comprobaciones(dataset):
         return False
 
     return True
+
+def estadisticos(df, scores):
+    a = df.mean()[scores].values.tolist()
+    a.extend(df.std()[scores].values)
+    a.append(df[scores].mean().mean())
+    a.append(df[scores].std().std())
+    a.extend(df.median()[scores].values)
+    a.append(df[scores].median().median())
+    a.append(df.MEDIADUF.mean())
+    a.append(df[df.CURSO == '17/18'].ID.count())
+    a.append(df[df.CURSO == '18/19'].ID.count())
+    a.append(df[df.CURSO == '19/20'].ID.count())
+    return [round(d, 2) for d in a]
+
+
+def caracterizar_grupos(dataComputing, dataset, GRUPO):
+    cursos_por_est = {id: curso for id, curso in dataComputing[['ID', 'CURSO']].values}
+    mediaDUF = {id: dataComputing.loc[dataComputing.ID == id, 'DUF'].mean() for id in dataComputing['ID'].values}
+    dataset['CURSO'] = [cursos_por_est[id] for id in dataset['ID'].values]
+    dataset['MEDIADUF'] = [mediaDUF[id] for id in dataset['ID'].values]
+    scores = dataset.columns[dataset.columns.str.contains('SCORE')]
+    columnas = ['MEDIA_SCORE2', 'MEDIA_SCORE3', 'MEDIA_SCORE4', 'MEDIA_SCORE5','MEDIA_SCORE6', 
+            'SD_SCORE2', 'SD_SCORE3', 'SD_SCORE4', 'SD_SCORE5', 'SD_SCORE6', 'MEDIA', 'SD',
+            'MEDIANA_SCORE2', 'MEDIANA_SCORE3', 'MEDIANA_SCORE4', 'MEDIANA_SCORE5','MEDIANA_SCORE6',
+            'MEDIANA','MEDIA_DUF','N_CURSO1','N_CURSO2','N_CURSO3']
+    
+    dic = dict()
+    for i in dataset[GRUPO].unique():
+        dic['GRUPO{}'.format(i)] = estadisticos(dataset[dataset[GRUPO] == i], scores)
+    
+    return pd.DataFrame.from_dict(dic, orient='index', columns=columnas)
